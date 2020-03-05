@@ -59,34 +59,28 @@ public class ImageCrypt {
         //return encryptedImage;
     }
 
-    private String decrypt() {//TODO
+    public String decrypt() {//TODO
         StringBuilder binary = new StringBuilder();
         boolean finished=false;
-        for (int i = 0; i < encryptedImage.getHeight(); i++) {
-            for (int j = 0; j < encryptedImage.getWidth(); j++) {
-                Color encryptedPixel = new Color(encryptedImage.getRGB(i, j));
-                Color basicPixel = new Color(basicImage.getRGB(i, j));
+        int counter=0;
+        Color encryptedPixel;
+        Color basicPixel;
+        for (int i = 0; i < encryptedImage.getHeight() && !finished; i++) {
+            for (int j = 0; j < encryptedImage.getWidth() && !finished; j++) {
+                encryptedPixel = new Color(encryptedImage.getRGB(i, j));
+                basicPixel = new Color(basicImage.getRGB(i, j));
                 if(encryptedPixel.getBlue()!=basicPixel.getBlue())binary.append('1');
-                else binary.append('0');                 
+                else binary.append('0');
+                counter++;
+                if(counter==8 && binary.compareTo(new StringBuilder("00000000"))==0) {
+                	finished=true;
+                }else counter=0;
             }
         }
-        return binary.toString();
+        return Integer.toString(Integer.parseInt(binary.toString(), 10));
     }
 
-    private String getBinary() {
-        byte[] bytes = message.getBytes();
-        StringBuilder binary = new StringBuilder();
-        for (byte b : bytes) {
-            int val = b;
-            for (int i = 0; i < 8; i++) {
-                binary.append((val & 128) == 0 ? 0 : 1);
-                val <<= 1;
-            }
-        }
-        return binary.toString();
-    }
-
-    private String getString() {//TODO
+    public String getBinary() {
         byte[] bytes = message.getBytes();
         StringBuilder binary = new StringBuilder();
         for (byte b : bytes) {
