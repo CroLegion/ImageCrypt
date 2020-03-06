@@ -7,6 +7,8 @@ import java.awt.image.WritableRaster;
 import java.io.File;
 import java.util.Scanner;
 
+import org.hamcrest.core.Is;
+
 /**
  *
  * @author Jacob Stilwell
@@ -18,20 +20,33 @@ public class ImageCrypt {
     private BufferedImage encryptedImage;
     private final int MAX = 255;
     private final int MIN = 0;
-
     public ImageCrypt() {
         this.message = null;
         this.basicImage = null;
     }
 
-    public ImageCrypt(String message, BufferedImage basicImage) {
+    public ImageCrypt(String message, BufferedImage basicImage) throws StringTooBigException{
+    	this.basicImage=convert(basicImage);  	
+  		if(message.length()*8 > basicImage.getHeight()* basicImage.getWidth()) {
+    		throw new StringTooBigException("The message "+message+" of length "+ message.length()*8 
+    				+"is too large for the selected image of area " + basicImage.getWidth()* basicImage.getHeight());
+    	}
         this.message = message;
-        this.basicImage = basicImage;
-        this.encryptedImage= deepCopy(basicImage);
+        
+        this.encryptedImage= convert(new BufferedImage(this.basicImage.getWidth(), this.basicImage.getHeight(), this.basicImage.getType()));
+        		//deepCopy(basicImage);
     }
-    public ImageCrypt(BufferedImage encryptedImage, BufferedImage basicImage) {
-        this.encryptedImage = encryptedImage;
-        this.basicImage = basicImage;
+    public ImageCrypt(BufferedImage encryptedImage, BufferedImage basicImage) throws StringTooBigException{
+    	BufferedImage rgbImage = new BufferedImage(basicImage.getWidth(), basicImage.getHeight(), BufferedImage.TYPE_INT_RGB);
+        rgbImage.getGraphics().drawImage(basicImage, 0, 0, null);
+        this.basicImage=rgbImage;
+        rgbImage = new BufferedImage(encryptedImage.getWidth(), encryptedImage.getHeight(), BufferedImage.TYPE_INT_RGB);
+        rgbImage.getGraphics().drawImage(encryptedImage, 0, 0, null);
+        if(message.length()*8 > basicImage.getHeight()* basicImage.getWidth()) {
+    		throw new StringTooBigException("The message "+message+" of length "+ message.length()*8 
+    				+"is too large for the selected image of area " + basicImage.getWidth()* basicImage.getHeight());
+    	}
+        this.encryptedImage =rgbImage;
         this.message=null;
     }
     public void encrypt() {
@@ -51,7 +66,8 @@ public class ImageCrypt {
                 }
                 encryptedImage.setRGB(x, y, pixel.getRGB());
                 binLocation++;
-                //System.out.println(binary.length()+" "+binLocation);
+                
+                System.out.println(binary.length()+" "+binLocation);
                 if(binLocation==binary.length()){
                     finished=true;
                     break;
@@ -61,7 +77,7 @@ public class ImageCrypt {
         //return encryptedImage;
     }
 
-    public String decrypt() {
+    public String decrypt() throws StringTooBigException, NoImageException {
         StringBuilder binary = new StringBuilder();
         StringBuilder output = new StringBuilder();
         int windowL=0;
@@ -78,7 +94,7 @@ public class ImageCrypt {
                 else binary.append('0');
                 counter++;
                 if(binary.length()>=8) {
-                	if(counter==8 && binary.substring(windowL, windowR).compareTo(new StringBuilder("00000000").toString())==0) {
+                	if(counter==8 && binary.substring(windowL, windowR).compareTo(new StringBuilder("11111111").toString())==0) {
                     	finished=true;
                     }else if(counter==8) {
                     	output.append((char)Integer.parseInt(binary.substring(windowL, windowR), 2));
@@ -113,12 +129,23 @@ public class ImageCrypt {
         WritableRaster raster = bi.copyData(bi.getRaster().createCompatibleWritableRaster());
         return new BufferedImage(cm, raster, isAlphaPremultiplied, null);
     }
-    
+    private BufferedImage convert(BufferedImage image) {
+    	BufferedImage rgbImage = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_RGB);
+        rgbImage.getGraphics().drawImage(image, 0, 0, null);
+    	return rgbImage;
+    }
     public String getMessage() {
         return message;
     }
 
-    public void setMessage(String message) {
+    public void setMessage(String message) throws StringTooBigException, NoImageException{
+    	if(getBasicImage()==null) {
+    		throw new NoImageException("No image is found.");
+    	}
+    	if(message.length()*8 > basicImage.getHeight()* basicImage.getWidth()) {
+    		throw new StringTooBigException("The message "+message+" of length "+ message.length()*8 
+    				+"is too large for the selected image of area " + basicImage.getWidth()* basicImage.getHeight());
+    	}
         this.message = message;
     }
 
@@ -129,12 +156,25 @@ public class ImageCrypt {
     public void setBasicImage(BufferedImage basicImage) {
         this.basicImage = basicImage;
     }
-
-    public BufferedImage getEncryptedImage() {
+    public BufferedImage getEncryptedImage() {  
         return encryptedImage;
     }
 
     public void setEncryptedImage(BufferedImage encryptedImage) {
         this.encryptedImage = encryptedImage;
+    }
+    
+    
+    public class StringTooBigException extends Exception{
+
+    	public StringTooBigException(String errorMessage){
+			super(errorMessage);
+		}
+    }
+    public class NoImageException extends Exception{
+
+    	public NoImageException(String errorMessage){
+			super(errorMessage);
+		}
     }
 }

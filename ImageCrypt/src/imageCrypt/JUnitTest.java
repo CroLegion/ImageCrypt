@@ -1,6 +1,7 @@
 package imageCrypt;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -53,9 +54,9 @@ public class JUnitTest {
 	public void checkString() {
 		ImageCrypt imageCrypt = new ImageCrypt(message, normImage);
 		imageCrypt.encrypt();
+		String out= imageCrypt.decrypt();
 		System.out.println(imageCrypt.decrypt());
-		assertEquals(message, imageCrypt.decrypt());
-		
+		assertEquals(message+" and "+ out, message, out);
 
 
 		
