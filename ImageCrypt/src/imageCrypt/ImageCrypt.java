@@ -2,6 +2,8 @@ package imageCrypt;
 
 import java.awt.Color;
 import java.awt.image.BufferedImage;
+import java.awt.image.ColorModel;
+import java.awt.image.WritableRaster;
 import java.io.File;
 import java.util.Scanner;
 
@@ -25,7 +27,7 @@ public class ImageCrypt {
     public ImageCrypt(String message, BufferedImage basicImage) {
         this.message = message;
         this.basicImage = basicImage;
-        this.encryptedImage= basicImage;
+        this.encryptedImage= deepCopy(basicImage);
     }
     public ImageCrypt(BufferedImage encryptedImage, BufferedImage basicImage) {
         this.encryptedImage = encryptedImage;
@@ -36,21 +38,21 @@ public class ImageCrypt {
         String binary = getBinary();
         int binLocation = 0;
         boolean finished=false;
-        System.out.println(basicImage.getHeight()+" "+basicImage.getWidth());
-        for (int i = 0; i < basicImage.getHeight() && !finished; i++) {
-            for (int j = 0; j < basicImage.getWidth(); j++) {
-                Color pixel = new Color(basicImage.getRGB(i, j));
+        for (int y = 0; y < basicImage.getHeight() && !finished; y++) {
+            for (int x = 0; x < basicImage.getWidth(); x++) {
+                Color pixel = new Color(basicImage.getRGB(x, y));
                 if (binary.charAt(binLocation) == '1') {
                     if (pixel.getBlue() < MAX) {
                         pixel = new Color(pixel.getRed(), pixel.getGreen(), pixel.getBlue() + 1);
                     } else {
                         pixel = new Color(pixel.getRed(), pixel.getGreen(), pixel.getBlue() - 1);
                     }
-                    //System.out.println(i+" "+j);
-                    encryptedImage.setRGB(i, j, pixel.getRGB());
+                    //System.out.println(x);
                 }
+                encryptedImage.setRGB(x, y, pixel.getRGB());
                 binLocation++;
-                if(binLocation==binary.length()-1){
+                //System.out.println(binary.length()+" "+binLocation);
+                if(binLocation==binary.length()){
                     finished=true;
                     break;
                 }
@@ -59,25 +61,37 @@ public class ImageCrypt {
         //return encryptedImage;
     }
 
-    public String decrypt() {//TODO
+    public String decrypt() {
         StringBuilder binary = new StringBuilder();
+        StringBuilder output = new StringBuilder();
+        int windowL=0;
+        int windowR=8;
         boolean finished=false;
         int counter=0;
         Color encryptedPixel;
         Color basicPixel;
-        for (int i = 0; i < encryptedImage.getHeight() && !finished; i++) {
-            for (int j = 0; j < encryptedImage.getWidth() && !finished; j++) {
-                encryptedPixel = new Color(encryptedImage.getRGB(i, j));
-                basicPixel = new Color(basicImage.getRGB(i, j));
+        for (int y = 0; y < encryptedImage.getHeight() && !finished; y++) {
+            for (int x = 0; x < encryptedImage.getWidth() && !finished; x++) {
+                encryptedPixel = new Color(encryptedImage.getRGB(x, y));
+                basicPixel = new Color(basicImage.getRGB(x, y));
                 if(encryptedPixel.getBlue()!=basicPixel.getBlue())binary.append('1');
                 else binary.append('0');
                 counter++;
-                if(counter==8 && binary.compareTo(new StringBuilder("00000000"))==0) {
-                	finished=true;
-                }else counter=0;
+                if(binary.length()>=8) {
+                	if(counter==8 && binary.substring(windowL, windowR).compareTo(new StringBuilder("00000000").toString())==0) {
+                    	finished=true;
+                    }else if(counter==8) {
+                    	output.append((char)Integer.parseInt(binary.substring(windowL, windowR), 2));
+                    	windowL+=8;
+                    	windowR+=8;
+                    	counter=0;
+                    }else {
+                    }
+                }
             }
         }
-        return Integer.toString(Integer.parseInt(binary.toString(), 10));
+        setMessage(output.toString());
+        return output.toString();
     }
 
     public String getBinary() {
@@ -93,6 +107,13 @@ public class ImageCrypt {
         return binary.toString();
     }
 
+    private static BufferedImage deepCopy(BufferedImage bi) {
+        ColorModel cm = bi.getColorModel();
+        boolean isAlphaPremultiplied = cm.isAlphaPremultiplied();
+        WritableRaster raster = bi.copyData(bi.getRaster().createCompatibleWritableRaster());
+        return new BufferedImage(cm, raster, isAlphaPremultiplied, null);
+    }
+    
     public String getMessage() {
         return message;
     }
