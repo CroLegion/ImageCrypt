@@ -10,6 +10,9 @@ import java.io.IOException;
 import javax.imageio.ImageIO;
 
 import org.junit.Test;
+
+import imageCrypt.ImageCrypt.StringTooBigException;
+
 import org.junit.BeforeClass;
 
 public class JUnitTest {
@@ -33,13 +36,13 @@ public class JUnitTest {
 	     
 	}
 	@Test
-	public void checkBinary() {
+	public void checkBinary() throws StringTooBigException {
 		ImageCrypt imageCrypt = new ImageCrypt(message, normImage);
 		assertEquals(CorrectMessage, imageCrypt.getBinary());
 		
 	}
 	@Test
-	public void checkBinaryLength() {
+	public void checkBinaryLength() throws StringTooBigException {
 		ImageCrypt imageCrypt = new ImageCrypt(message, normImage);
 		System.out.println(CorrectMessage.length());
 		
@@ -51,15 +54,13 @@ public class JUnitTest {
 		
 	}
 	@Test //TODO
-	public void checkString() {
+	public void checkString() throws StringTooBigException {
 		ImageCrypt imageCrypt = new ImageCrypt(message, normImage);
 		imageCrypt.encrypt();
-		String out= imageCrypt.decrypt();
-		System.out.println(imageCrypt.decrypt());
-		assertEquals(message+" and "+ out, message, out);
-
-
-		
+		imageCrypt.decrypt();
+		String out= imageCrypt.getMessage();
+		System.out.println(out);
+		assertEquals(message+" and "+ out, message, out);		
 	}
 	
 }

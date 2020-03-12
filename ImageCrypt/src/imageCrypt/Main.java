@@ -11,6 +11,8 @@ import java.util.InputMismatchException;
 import java.util.Scanner;
 import javax.imageio.ImageIO;
 
+import imageCrypt.ImageCrypt.StringTooBigException;
+
 /**
 *
 * @author jstil
@@ -18,9 +20,11 @@ import javax.imageio.ImageIO;
 public class Main {
   /**
    * @param args the command line arguments
+ * @throws StringTooBigException 
    */
-  public static void main(String[] args) {
+  public static void main(String[] args) throws StringTooBigException {
       BufferedImage normImage = null;
+      BufferedImage encImage =null;
       StringBuilder messageString=new StringBuilder();
       try {
     	  File imageFile = new File("G:/flag.png");
@@ -33,15 +37,30 @@ public class Main {
     	  Scanner scanner = new Scanner(file);
     	  while (scanner.hasNext()) {
     		  messageString.append(scanner.next()).append(" ");
-    	  }    	  
+    	  }
+    	  messageString.toString().trim();
+    	  scanner.close();
     	  messageString.deleteCharAt(messageString.length()-1);
       } catch (Exception e) {
-    	  
+    	  e.printStackTrace();
       }
       ImageCrypt imageCrypt = new ImageCrypt(messageString.toString(), normImage);
       imageCrypt.encrypt();
-      String out= imageCrypt.decrypt();
-      System.out.println(out);
+      try {
+    	  File imageFile = new File("G:/encrypted.png");
+    	  ImageIO.write(imageCrypt.getEncryptedImage(), "png", imageFile);
+      } catch(IOException e){
+    	  e.printStackTrace();
+      }
+      try {
+    	  File imageFile = new File("G:/encrypted.png");
+    	  encImage = ImageIO.read(imageFile);
+      } catch(IOException e){
+    	  e.printStackTrace();
+      }
+      ImageCrypt imageCrypt2 = new ImageCrypt(encImage, normImage);
+      imageCrypt2.decrypt();
+      String out= imageCrypt2.getMessage();
+      System.out.println(out+" " + normImage.getWidth()*normImage.getHeight());
   }
-  
 }

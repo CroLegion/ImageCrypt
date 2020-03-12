@@ -19,36 +19,48 @@ public class ImageCrypt {
     private BufferedImage basicImage;
     private BufferedImage encryptedImage;
     private final int MAX = 255;
-    private final int MIN = 0;
+    private int type;
     public ImageCrypt() {
         this.message = null;
         this.basicImage = null;
     }
-
+    
+    /**
+     * This is the main constructor for the class. Takes in a message and image.
+     * 
+     * @param message	The message to be encrypted.
+     * @param basicImage	The unencrypted message.
+     * @throws StringTooBigException
+     */
     public ImageCrypt(String message, BufferedImage basicImage) throws StringTooBigException{
-    	this.basicImage=convert(basicImage);  	
+    	type=basicImage.getType();
+    	this.basicImage=convert(basicImage);
   		if(message.length()*8 > basicImage.getHeight()* basicImage.getWidth()) {
     		throw new StringTooBigException("The message "+message+" of length "+ message.length()*8 
     				+"is too large for the selected image of area " + basicImage.getWidth()* basicImage.getHeight());
-    	}
-        this.message = message;
+    	}else {
+    		this.message = message;
+    	} 
+       
+        this.encryptedImage= convert(basicImage);
+    }
+    
+    /**
+     * This is the secondary constructor for decrypting the encrypted image with the original image.
+     * 
+     * @param message	The message to be encrypted.
+     * @param basicImage	The unencrypted message.
+     * @throws StringTooBigException
+     */
+    public ImageCrypt(BufferedImage encryptedImage, BufferedImage basicImage){
+        this.basicImage=convert(basicImage);      
+        this.encryptedImage =convert(encryptedImage);
         
-        this.encryptedImage= convert(new BufferedImage(this.basicImage.getWidth(), this.basicImage.getHeight(), this.basicImage.getType()));
-        		//deepCopy(basicImage);
     }
-    public ImageCrypt(BufferedImage encryptedImage, BufferedImage basicImage) throws StringTooBigException{
-    	BufferedImage rgbImage = new BufferedImage(basicImage.getWidth(), basicImage.getHeight(), BufferedImage.TYPE_INT_RGB);
-        rgbImage.getGraphics().drawImage(basicImage, 0, 0, null);
-        this.basicImage=rgbImage;
-        rgbImage = new BufferedImage(encryptedImage.getWidth(), encryptedImage.getHeight(), BufferedImage.TYPE_INT_RGB);
-        rgbImage.getGraphics().drawImage(encryptedImage, 0, 0, null);
-        if(message.length()*8 > basicImage.getHeight()* basicImage.getWidth()) {
-    		throw new StringTooBigException("The message "+message+" of length "+ message.length()*8 
-    				+"is too large for the selected image of area " + basicImage.getWidth()* basicImage.getHeight());
-    	}
-        this.encryptedImage =rgbImage;
-        this.message=null;
-    }
+    
+    /*
+     * Encrypts the message into the image and creates a new encrypted image.
+     */
     public void encrypt() {
         String binary = getBinary();
         int binLocation = 0;
@@ -77,7 +89,10 @@ public class ImageCrypt {
         //return encryptedImage;
     }
 
-    public String decrypt() throws StringTooBigException, NoImageException {
+    /*
+     * Decrypts the message given the original and encrypted images.
+     */
+    public void decrypt() throws StringTooBigException {
         StringBuilder binary = new StringBuilder();
         StringBuilder output = new StringBuilder();
         int windowL=0;
@@ -94,7 +109,7 @@ public class ImageCrypt {
                 else binary.append('0');
                 counter++;
                 if(binary.length()>=8) {
-                	if(counter==8 && binary.substring(windowL, windowR).compareTo(new StringBuilder("11111111").toString())==0) {
+                	if(counter==8 && binary.substring(windowL, windowR).compareTo(new StringBuilder("00000000").toString())==0) {
                     	finished=true;
                     }else if(counter==8) {
                     	output.append((char)Integer.parseInt(binary.substring(windowL, windowR), 2));
@@ -107,9 +122,11 @@ public class ImageCrypt {
             }
         }
         setMessage(output.toString());
-        return output.toString();
     }
 
+    /*
+     * Gets the binary representation of the string.
+     */
     public String getBinary() {
         byte[] bytes = message.getBytes();
         StringBuilder binary = new StringBuilder();
@@ -122,26 +139,21 @@ public class ImageCrypt {
         }
         return binary.toString();
     }
-
-    private static BufferedImage deepCopy(BufferedImage bi) {
-        ColorModel cm = bi.getColorModel();
-        boolean isAlphaPremultiplied = cm.isAlphaPremultiplied();
-        WritableRaster raster = bi.copyData(bi.getRaster().createCompatibleWritableRaster());
-        return new BufferedImage(cm, raster, isAlphaPremultiplied, null);
-    }
+    
+    /*
+     * Converts the image into a viable image for encryption. 
+     */
     private BufferedImage convert(BufferedImage image) {
     	BufferedImage rgbImage = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_RGB);
         rgbImage.getGraphics().drawImage(image, 0, 0, null);
     	return rgbImage;
     }
+    
     public String getMessage() {
         return message;
     }
 
-    public void setMessage(String message) throws StringTooBigException, NoImageException{
-    	if(getBasicImage()==null) {
-    		throw new NoImageException("No image is found.");
-    	}
+    public void setMessage(String message) throws StringTooBigException{   	
     	if(message.length()*8 > basicImage.getHeight()* basicImage.getWidth()) {
     		throw new StringTooBigException("The message "+message+" of length "+ message.length()*8 
     				+"is too large for the selected image of area " + basicImage.getWidth()* basicImage.getHeight());
@@ -163,17 +175,9 @@ public class ImageCrypt {
     public void setEncryptedImage(BufferedImage encryptedImage) {
         this.encryptedImage = encryptedImage;
     }
-    
-    
+        
     public class StringTooBigException extends Exception{
-
     	public StringTooBigException(String errorMessage){
-			super(errorMessage);
-		}
-    }
-    public class NoImageException extends Exception{
-
-    	public NoImageException(String errorMessage){
 			super(errorMessage);
 		}
     }
